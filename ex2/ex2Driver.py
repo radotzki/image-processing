@@ -73,9 +73,9 @@ def test_1_c():
     Qt = np.asarray([[20,120],[20,20],[30,60]], dtype=np.float32)
     Pt = np.asarray([[20,20],[70, 10],[60,60]], dtype=np.float32)
 
-    # for lineIdx in np.arange(0,Qs.shape[0]):
-    #     ax1.plot([Qs[lineIdx,0], Ps[lineIdx,0]],[Qs[lineIdx,1],Ps[lineIdx,1]],'r')
-    #     ax1.plot([Qt[lineIdx,0], Pt[lineIdx,0]],[Qt[lineIdx,1],Pt[lineIdx,1]],'g--')
+    for lineIdx in np.arange(0,Qs.shape[0]):
+        ax1.plot([Qs[lineIdx,0], Ps[lineIdx,0]],[Qs[lineIdx,1],Ps[lineIdx,1]],'r')
+        ax1.plot([Qt[lineIdx,0], Pt[lineIdx,0]],[Qt[lineIdx,1],Pt[lineIdx,1]],'g--')
 
     p=1.0
     b=2.0

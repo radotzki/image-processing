@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.matlib
 import cv2
 import matplotlib.pyplot as plt
 
@@ -36,6 +37,11 @@ def applyAffineTransToImage(img, affineT):
 
     x = new_pixel_position[0]
     y = new_pixel_position[1]
+    V = interBiLiner(img, x, y)
+
+    return np.reshape(V, (img.shape))
+
+def interBiLiner(img, x, y):
     x_out_of_range = []
     y_out_of_range = []
 
@@ -79,27 +85,46 @@ def applyAffineTransToImage(img, affineT):
     S = SW * (1 - u) + SE * u
     N = NW * (1 - u) + NE * u
     V = S * (1 - v) + N * v
+    return V
 
-    return np.reshape(V, (img.shape))
+def multipleSegmentDefromation(img, Qs, Ps, Qt, Pt, p, b):
+    R_sum = [0,0]
+    W_sum = [0,0]
 
-# def multipleSegmentDefromation(img, Qs, Ps, Qt, Pt, a, b):
-#     numOfSegments = Qs.shape[0]
-#     Rsrc = np.zeros((img.shape[0] * img.shape[1], 2), np.float32, **None)
-#     weightSum = 0
-#     for segIdx in np.arange(0, numOfSegments):
-#         Q11 = Qs[(segIdx, :)]
-#         P11 = Ps[(segIdx, :)]
-#         Q12 = Qt[(segIdx, :)]
-#         P12 = Pt[(segIdx, :)]
-#         (R1, weight1) = deformationBetweenLines(img, Q11, P11, Q12, P12, a, b)
-#         Rsrc = Rsrc + R1 * weight1[(:, np.newaxis)]
-#         weightSum = weightSum + weight1
+    for point_idx in range(0, len(Qs)):
+        Q = Qs[point_idx]
+        P = Ps[point_idx]
+        Q_ = Qt[point_idx]
+        P_ = Pt[point_idx]
 
-#     Rsrc = np.divide(Rsrc, weightSum[(:, np.newaxis)])
-#     imgT = interp2Bilinear(img, Rsrc)
-#     imgT = np.reshape(imgT, (img.shape[0], img.shape[1]))
-#     return imgT
+        u = (Q - P) / np.linalg.norm(Q - P)
+        v = np.asarray([u[1], -u[0]])
+        u_ = (Q_ - P_) / np.linalg.norm(Q_ - P_)
+        v_ = np.asarray([u_[1], -u_[0]])
 
+        BETA = []
+        R = []
+
+        for x in range(0, 256):
+            for y in range(0, 256):
+                R_ = np.array([x, y])
+
+                alpha = np.dot(R_ - np.matlib.repmat(P_, R_.shape[0], 1), u_) / np.linalg.norm(Q_ - P_)
+                beta = np.dot(R_ - np.matlib.repmat(P_, R_.shape[0], 1), v_)
+                BETA.append(beta)
+                R.append(P + np.multiply(np.multiply(alpha, np.linalg.norm(Q - P)), u) + np.multiply(beta, v))
+
+        R = np.array(R)
+        BETA = np.array(BETA)
+
+        Wi = ((np.linalg.norm(Q - P) ** p) / (0.001 + BETA)) ** b
+        R_sum += R * Wi
+        W_sum += Wi
+
+    R = R_sum / W_sum
+    imgT = interBiLiner(img, R[:, 0], R[:, 1])
+    imgT = np.reshape(imgT, (img.shape[0], img.shape[1]), order='F')
+    return imgT
 
 def imGradSobel(img):
     first_col = np.append(np.append(img[0, 0], img[:, 0]), img[-1, - 1])
@@ -115,30 +140,10 @@ def imGradSobel(img):
     padded_img[:, -1] = last_col
     padded_img[1:img.shape[0] + 1, 1:img.shape[0] + 1] = img[:]
 
-    return img
-
-
-imageName = './images/cameraman.tif'
-# img = cv2.imread(imageName,cv2.IMREAD_GRAYSCALE)
-# pts1 = np.float32([[0, 5],[20, 30],[15, 12]])
-# pts2 = np.float32([[11, 20],[28, 43],[23, 26]])
-
-# affineT = getAffineTransformation(pts1,pts2)
-# print (affineT)
-
-# # imgT = applyAffineTransToImage2(img, affineT)
-# imgT = applyAffineTransToImage(img, affineT)
-# f, (ax1, ax2) = plt.subplots(1, 2, sharex='col', sharey='row')
-# ax1.imshow(img, cmap='gray'), ax1.set_title('Original')
-# ax2.imshow(imgT, cmap='gray'), ax2.set_title('Transformed')
-
-
-img = cv2.imread(imageName, cv2.IMREAD_GRAYSCALE)
-Gx, Gy, Gmag = imGradSobel(img)
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
-ax1.imshow(img, cmap='gray', vmin=0, vmax=255), ax1.set_title('Original')
-ax2.imshow(Gx, cmap='gray', vmin=0, vmax=255), ax2.set_title('Gx')
-ax3.imshow(Gy, cmap='gray', vmin=0, vmax=255), ax3.set_title('Gy')
-ax4.imshow(Gmag, cmap='gray', vmin=0, vmax=255), ax4.set_title('Gmag')
-
-plt.show()
+    # Sobel
+    grad_x = padded_img[:, 2:] - padded_img[:, :-2]
+    grad_x = grad_x[:-2, :] + grad_x[2:, :] + 2 * grad_x[1:-1, :]
+    grad_y = padded_img[2:, :] - padded_img[:-2, :]
+    grad_y = grad_y[:, :-2] + grad_y[:, 2:] + 2 * grad_y[:, 1:-1]
+    grad_magnitude = np.sqrt(grad_x ** 2 + grad_y ** 2)
+    return (grad_x, grad_y, grad_magnitude)
