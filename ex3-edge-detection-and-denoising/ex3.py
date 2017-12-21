@@ -1,10 +1,9 @@
-
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from math import cos, sin, pi
+from matplotlib.backends.backend_pdf import PdfPages
 import ex3Utils
-
 
 def HoughCircles(imageEdges, radius, votesThresh, distThresh):
     A = np.zeros((imageEdges.shape[0], imageEdges.shape[1], len(radius)))
@@ -41,36 +40,28 @@ def HoughCircles(imageEdges, radius, votesThresh, distThresh):
     return circlesClean
 
 
-####################################################################################################
+def bilateralFilter(imgNoisy, spatial_std, range_std):
+    filtered_img = np.zeros(imgNoisy.shape)
+    radius = 3 * spatial_std
+
+    for i in range(0, imgNoisy.shape[0]):
+        for j in range(0, imgNoisy.shape[1]):
+            norm = 0
+            sigma_iw = 0
+
+            for k in range(max(i - radius, 0), min(i + radius, imgNoisy.shape[0])):
+                for l in range(max(j - radius, 0), min(j + radius, imgNoisy.shape[1])):
+                    w = weight(imgNoisy, i, j, k, l, spatial_std, range_std)
+                    norm += w
+                    sigma_iw += imgNoisy[k, l] * w
+
+            filtered_img[i, j] = sigma_iw / norm
+
+    return filtered_img
 
 
-
-# to get fixed set of random numbers
-np.random.seed(seed=0)
-
-
-def test_1(imageName):
-
-    img = cv2.imread(imageName, cv2.IMREAD_GRAYSCALE)
-    imageEdges = cv2.Canny(img, 100, 200)
-
-    votesThresh = 60
-    distThresh = 15
-    radius = range(5, 31, 5)
-    circles = HoughCircles(imageEdges, radius, votesThresh, distThresh)
-
-    f, (ax1, ax2) = plt.subplots(1, 2, sharex='col')
-    ax1.imshow(img, cmap='gray', vmin=0, vmax=255), ax1.set_title(
-        'Original+ detected circles')
-    ax2.imshow(imageEdges, cmap='gray', vmin=0,
-               vmax=255), ax2.set_title('Canny edges')
-
-    circle = []
-    for y, x, r, val in circles:
-        circle.append(plt.Circle((x, y), r, color=(1, 0, 0), fill=False))
-        ax1.add_artist(circle[-1])
-    plt.show()
-
-
-imageName = './Images/coins.tif'
-test_1(imageName)
+def weight(I, i, j, k, l, spatial_std, range_std):
+    return np.exp(
+        - (((i - k)**2 + (j - l)**2) / (2 * spatial_std**2))
+        - (((I[i, j] - I[k, l])**2) / (2 * range_std**2))
+    )
