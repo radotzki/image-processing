@@ -136,23 +136,23 @@ def test_5d2():
 
 if __name__ == "__main__":
 
-#    # test 2 - 1D Fourier implementation
-    # test_2ab()
-    # test_2cd()
+   # test 2 - 1D Fourier implementation
+    test_2ab()
+    test_2cd()
 
-    # #test 3 - image upsampling
-    # imageName = './Images/cameraman.tif'
-    # test_3(imageName, [2,2])
-    # test_3(imageName, [3,2])
-    # test_3(imageName, [2,4])
-    # test_3(imageName, [0.5,0.5])
+    #test 3 - image upsampling
+    imageName = './Images/cameraman.tif'
+    test_3(imageName, [2,2])
+    test_3(imageName, [3,2])
+    test_3(imageName, [2,4])
+    test_3(imageName, [0.5,0.5])
 
-    # # test 4 - phase correlation
-    # test_4(10,5)
-    # test_4(33, 27)
-    # test_4(76, 100)
+    # test 4 - phase correlation
+    test_4(10,5)
+    test_4(33, 27)
+    test_4(76, 100)
 
-    # # test 5
+    # test 5
 
     # low pass filtering
     lowThresh = 0
@@ -173,6 +173,6 @@ if __name__ == "__main__":
     test_5 (imageName, lowThresh,highThresh)
 
     # # deconvolution
-    # test_5d1()
+    test_5d1()
 
-    # test_5d2()
+    test_5d2()

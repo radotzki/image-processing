@@ -1,4 +1,3 @@
-
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -94,8 +93,7 @@ def imFreqFilter(img, lowThresh, highThresh):
         for v in range(int(-mask.shape[1] / 2), int(mask.shape[1] / 2)):
             D_uv = np.sqrt(u ** 2 + v ** 2)
             if D_uv < lowThresh or D_uv > highThresh:
-                mask[u + int(mask.shape[0] / 2), v +
-                     int(mask.shape[1] / 2)] = 0
+                mask[u + int(mask.shape[0] / 2), v + int(mask.shape[1] / 2)] = 0
 
     fimg = np.fft.fftshift(np.fft.fft2(img))
     res = np.abs(np.fft.ifft2(fimg * mask))
@@ -136,4 +134,14 @@ def print_pdf():
     pp = PdfPages('filtered_images.pdf')
     pp.savefig(f)
 
-################################################################################
+
+def imageDeconv(img, h, k):
+    H = np.fft.fft2(h, img.shape)
+    G = np.fft.fft2(img)
+    H_ = np.conj(H)
+    (U, V) = np.meshgrid(np.linspace(0, img.shape[0] - 1, img.shape[0]), np.linspace(0, img.shape[1] - 1, img.shape[1]))
+    F_ = H_ / (H_ * H + k * (U ** 2 + V ** 2)) * G
+    result = np.abs(np.fft.ifft2(F_))
+    result = np.roll(result, int(h.shape[0] / 2), 0)
+    result = np.roll(result, int(h.shape[1] / 2), 1)
+    return result
